@@ -4,16 +4,15 @@ pragma solidity >=0.4.0 <0.6.0;
 contract FaireumDice{
     
     // State Variables
-    address constant TEST_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint constant MIN_BET = 0.01 ether;
-    uint constant MAX_AMOUNT = 300000 ether;
+    uint constant MAX_AMOUNT = 250000 ether;
 
-    uint constant HOUSE_PERCENT = 1;
-    uint constant HOUSE_MINIMUM_AMOUNT = 0.0003 ether;
+    uint constant HOUSE_PERCENT = 15;
+    uint constant HOUSE_MINIMUM_AMOUNT = 0.0002 ether;
 
     uint constant JACKPOT_MODULO = 1000;
-    uint constant JACKPOT_FEE = 0.001 ether;
-    uint constant MIN_JACKPOT_BET = 0.1 ether;
+    uint constant JACKPOT_FEE = 0.0015 ether;
+    uint constant MIN_JACKPOT_BET = 0.15 ether;
 
     uint128 public lockedInBets;
     address public owner;
@@ -30,6 +29,12 @@ contract FaireumDice{
         address user;
     }
 
+    //Events
+    event PaymentCompleted(address user, uint amount);
+    event JackpotPaid(address user, uint amount);
+    event BetPlaced(uint commit, address user, uint amount);
+
+
     //Modifiers
     modifier onlyOwner {
         require (msg.sender == owner, "Must be contract owner to invoke this method.");
@@ -44,7 +49,7 @@ contract FaireumDice{
     // Constructor. 
     constructor () public {
         owner = msg.sender;
-        croupier = TEST_ADDRESS;
+        croupier = address(0xFa1cb3601A518337DE08F67Ceda7f23B8A800F52);
     }
 
     // Fallback function. Deliberately left empty.
@@ -88,12 +93,14 @@ contract FaireumDice{
         bet.rollUnder = uint8(rollUnder);
         bet.blockNumber = uint40(block.number);
         bet.user = msg.sender;
+
+        emit BetPlaced(commit, bet.user, amount);
     }
 
     // @dev returns the expected amount to win after subtracting house edge
-    // @param amount
-    // @param modulo
-    // @param rollUnder
+    // @param amount - bet amount
+    // @param modulo - modulo of the game
+    // @param rollUnder - number to roll under
     function getDiceWinAmount(
         uint amount, 
         uint modulo, 
@@ -103,10 +110,10 @@ contract FaireumDice{
         pure 
         returns (uint winAmount, uint jackpotFee) 
     {
-       
+       //TODO use safe math
         jackpotFee = amount >= MIN_JACKPOT_BET ? JACKPOT_FEE : 0;
 
-        uint houseEdge = amount * HOUSE_PERCENT / 100;
+        uint houseEdge = amount * (HOUSE_PERCENT / 10) / 100;
 
         if (houseEdge < HOUSE_MINIMUM_AMOUNT) {
             houseEdge = HOUSE_MINIMUM_AMOUNT;
@@ -115,8 +122,48 @@ contract FaireumDice{
         winAmount = (amount - houseEdge - jackpotFee) * modulo / rollUnder;
     }
 
-    function settleBet() external onlyCroupier {
-        //TODO
+    // @dev settles the bet
+    function settleBet(
+        uint reveal, 
+        bytes32 blockHash
+    ) 
+        external 
+        onlyCroupier 
+    {
+        uint commit = uint(keccak256(abi.encodePacked(reveal)));
+
+        Bet storage bet = bets[commit];
+        uint blockNumber = bet.blockNumber;
+
+        require (blockhash(blockNumber) == blockHash);
+
+        uint amount = bet.amount;
+        uint modulo = bet.modulo;
+        uint rollUnder = bet.rollUnder;
+        address user = bet.user;
+
+        require (amount != 0, "Bet must have value amount.");
+
+        bytes32 random = keccak256(abi.encodePacked(reveal, blockHash));
+        uint diceRoll = uint(random) % modulo;
+
+        uint diceWinAmount;
+        uint jackpotFee;
+        (diceWinAmount, jackpotFee) = getDiceWinAmount(amount, modulo, rollUnder);
+
+        uint diceWin = 0;
+        uint jackpotWin = 0;
+
+        if (diceRoll < rollUnder) {
+            diceWin = diceWinAmount;
+        }
+
+        if (jackpotWin > 0) {
+            emit JackpotPaid(user, jackpotWin);
+        }
+
+        bet.amount = 0;
+        emit PaymentCompleted(user, diceWin + jackpotWin);
     }
    
 }
