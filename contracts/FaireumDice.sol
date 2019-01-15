@@ -1,5 +1,6 @@
-pragma solidity >=0.4.0 <0.6.0;
+pragma solidity >=0.4.0 <0.6.0
 
+import "./SafeMath.sol";
 // @title Faireum Dice Game Contract
 contract FaireumDice{
     
@@ -110,7 +111,7 @@ contract FaireumDice{
         pure 
         returns (uint winAmount, uint jackpotFee) 
     {
-       //TODO use safe math
+       
         jackpotFee = amount >= MIN_JACKPOT_BET ? JACKPOT_FEE : 0;
 
         uint houseEdge = amount * (HOUSE_PERCENT / 10) / 100;
@@ -119,7 +120,8 @@ contract FaireumDice{
             houseEdge = HOUSE_MINIMUM_AMOUNT;
         }
 
-        winAmount = (amount - houseEdge - jackpotFee) * modulo / rollUnder;
+        winAmount = (amount.sub(houseEdge).sub(jackpotFee))
+        .mul(modulo / rollUnder);
     }
 
     // @dev settles the bet
