@@ -130,7 +130,6 @@ contract FaireumDice{
         pure 
         returns (uint winAmount, uint jackpotFee) 
     {
-       
         jackpotFee = amount >= MIN_JACKPOT_BET ? JACKPOT_FEE : 0;
 
         uint houseEdge = amount * (HOUSE_PERCENT / 10) / 100;
