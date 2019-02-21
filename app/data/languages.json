@@ -1,0 +1,15 @@
+[
+  {
+    "id": 1,
+    "name": "English",
+    "flag": "british",
+    "code": "en"
+  },
+  {
+    "id": 2,
+    "name": "Chinese",
+    "flag": "chinese",
+    "code": "zh"
+
+  }
+]

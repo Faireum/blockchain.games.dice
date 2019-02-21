@@ -5,7 +5,7 @@ block content
   p.lead 
   hr
   .row
-    .col-md-6
+    .col-md-12
       h2 Test Betting
       form(role='form', enctype='multipart/form-data', method='POST')
         .form-group
@@ -13,12 +13,20 @@ block content
           .col-md-6
             input(type='number', name='myBet')
         button.btn.btn-primary(type='submit') DICE GO
-    .col-md-6
+  .row
+    .col-md-4
       h2 Winning Chance
       p 83.33%
-    .col-md-6
+    .col-md-4
       h2 Winning Bet Pays
       p 1.19x
-    .col-md-6
+    .col-md-4
       h2 BONUS
       p 0.01
+  .row
+    .col-md-4
+      p 0 High Madnification
+    .col-md-4
+      p Less than 50 wins
+    .col-md-4
+      p 100 High winning rate
